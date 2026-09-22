@@ -17,8 +17,11 @@ final class StateStore
                 $safe[(string)$key] = $value;
             }
         }
+
         $stmt = $this->pdo->prepare(
-            'INSERT INTO safedeploy_audit (request_id,action_name,result,details_json,created_at) VALUES (?,?,?,?,?)'
+            "INSERT INTO safedeploy_audit
+             (request_id,action_name,result,details_json,created_at)
+             VALUES (?,?,?,?,?)"
         );
         $stmt->execute([
             $requestId,
@@ -33,7 +36,9 @@ final class StateStore
     {
         try {
             $stmt = $this->pdo->prepare(
-                'INSERT INTO safedeploy_oidc_replay (token_fingerprint,run_id,action_name,created_at) VALUES (?,?,?,?)'
+                "INSERT INTO safedeploy_oidc_replay
+                 (token_fingerprint,run_id,action_name,created_at)
+                 VALUES (?,?,?,?)"
             );
             $stmt->execute([$fingerprint, $runId, $action, gmdate('Y-m-d H:i:s')]);
         } catch (PDOException $e) {
@@ -53,10 +58,11 @@ final class StateStore
         }
 
         $stmt = $this->pdo->prepare(
-            'INSERT INTO safedeploy_jobs
+            "INSERT INTO safedeploy_jobs
              (idempotency_key,target_rel,source_commit,manifest_sha256,payload_json,status,created_at)
-             VALUES (?,?,?,?,?,'PENDING',?)'
+             VALUES (?,?,?,?,?,'PENDING',?)"
         );
+
         try {
             $stmt->execute([
                 $key,
@@ -79,7 +85,7 @@ final class StateStore
 
     public function findJobByKey(string $key): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM safedeploy_jobs WHERE idempotency_key=? LIMIT 1');
+        $stmt = $this->pdo->prepare("SELECT * FROM safedeploy_jobs WHERE idempotency_key=? LIMIT 1");
         $stmt->execute([$key]);
         $row = $stmt->fetch();
         return is_array($row) ? $row : null;
@@ -87,7 +93,7 @@ final class StateStore
 
     public function getJob(int $id): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM safedeploy_jobs WHERE id=? LIMIT 1');
+        $stmt = $this->pdo->prepare("SELECT * FROM safedeploy_jobs WHERE id=? LIMIT 1");
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         if (!is_array($row)) {
@@ -99,7 +105,9 @@ final class StateStore
     public function markJobDone(int $id): void
     {
         $stmt = $this->pdo->prepare(
-            'UPDATE safedeploy_jobs SET status='DONE', payload_json=NULL, finished_at=? WHERE id=? AND status='PENDING''
+            "UPDATE safedeploy_jobs
+             SET status='DONE', payload_json=NULL, finished_at=?
+             WHERE id=? AND status='PENDING'"
         );
         $stmt->execute([gmdate('Y-m-d H:i:s'), $id]);
         if ($stmt->rowCount() !== 1) {
@@ -109,7 +117,7 @@ final class StateStore
 
     public function findDeploymentByJob(int $jobId): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM safedeploy_deployments WHERE job_id=? LIMIT 1');
+        $stmt = $this->pdo->prepare("SELECT * FROM safedeploy_deployments WHERE job_id=? LIMIT 1");
         $stmt->execute([$jobId]);
         $row = $stmt->fetch();
         return is_array($row) ? $row : null;
@@ -124,9 +132,9 @@ final class StateStore
         string $actor
     ): int {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO safedeploy_deployments
+            "INSERT INTO safedeploy_deployments
              (job_id,target_rel,source_commit,manifest_sha256,status,backup_path,actor,created_at,promoted_at)
-             VALUES (?,?,?,?,'ACTIVE',?,?,?,?)'
+             VALUES (?,?,?,?,'ACTIVE',?,?,?,?)"
         );
         $now = gmdate('Y-m-d H:i:s');
         $stmt->execute([$jobId, $target, $commit, $manifest, $backupPath, $actor, $now, $now]);
@@ -135,7 +143,7 @@ final class StateStore
 
     public function getDeployment(int $id): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM safedeploy_deployments WHERE id=? LIMIT 1');
+        $stmt = $this->pdo->prepare("SELECT * FROM safedeploy_deployments WHERE id=? LIMIT 1");
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         if (!is_array($row)) {
@@ -147,9 +155,9 @@ final class StateStore
     public function markRolledBack(int $id, string $rollbackCopy): void
     {
         $stmt = $this->pdo->prepare(
-            'UPDATE safedeploy_deployments
-             SET status="ROLLED_BACK", rollback_copy_path=?, rolled_back_at=?
-             WHERE id=? AND status="ACTIVE"'
+            "UPDATE safedeploy_deployments
+             SET status='ROLLED_BACK', rollback_copy_path=?, rolled_back_at=?
+             WHERE id=? AND status='ACTIVE'"
         );
         $stmt->execute([$rollbackCopy, gmdate('Y-m-d H:i:s'), $id]);
         if ($stmt->rowCount() !== 1) {
@@ -161,8 +169,10 @@ final class StateStore
     {
         $limit = max(1, min(100, $limit));
         $stmt = $this->pdo->query(
-            'SELECT id,job_id,target_rel,source_commit,manifest_sha256,status,actor,created_at,promoted_at,rolled_back_at
-             FROM safedeploy_deployments ORDER BY id DESC LIMIT ' . $limit
+            "SELECT id,job_id,target_rel,source_commit,manifest_sha256,status,actor,created_at,promoted_at,rolled_back_at
+             FROM safedeploy_deployments
+             ORDER BY id DESC
+             LIMIT " . $limit
         );
         return $stmt->fetchAll() ?: [];
     }
