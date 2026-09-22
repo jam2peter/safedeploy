@@ -1,0 +1,52 @@
+name: SafeDeploy
+description: Deploy a versioned bundle with GitHub Actions OIDC and rollback
+author: JamPeter
+branding:
+  icon: upload-cloud
+  color: blue
+
+inputs:
+  endpoint:
+    description: HTTPS SafeDeploy API endpoint
+    required: true
+  source:
+    description: Local directory to deploy
+    required: true
+  target:
+    description: Logical target such as apps/my-app
+    required: true
+  health-url:
+    description: Public HTTPS URL expected to return HTTP 200 after promotion
+    required: true
+  audience:
+    description: OIDC audience; defaults to endpoint
+    required: false
+    default: ""
+  auto-rollback:
+    description: Roll back the promoted deployment if HTTPS readback fails
+    required: false
+    default: "true"
+
+outputs:
+  deployment-id:
+    description: SafeDeploy deployment id
+    value: ${{ steps.deploy.outputs.deployment_id }}
+  manifest-sha256:
+    description: Canonical bundle manifest SHA-256
+    value: ${{ steps.deploy.outputs.manifest_sha256 }}
+
+runs:
+  using: composite
+  steps:
+    - id: deploy
+      shell: bash
+      env:
+        SAFEDEPLOY_ENDPOINT: ${{ inputs.endpoint }}
+        SAFEDEPLOY_SOURCE: ${{ inputs.source }}
+        SAFEDEPLOY_TARGET: ${{ inputs.target }}
+        SAFEDEPLOY_HEALTH_URL: ${{ inputs.health-url }}
+        SAFEDEPLOY_AUDIENCE: ${{ inputs.audience }}
+        SAFEDEPLOY_AUTO_ROLLBACK: ${{ inputs.auto-rollback }}
+      run: |
+        set -euo pipefail
+        python3 "${{ github.action_path }}/client/safedeploy.py" deploy           --endpoint "$SAFEDEPLOY_ENDPOINT"           --source "$SAFEDEPLOY_SOURCE"           --target "$SAFEDEPLOY_TARGET"           --health-url "$SAFEDEPLOY_HEALTH_URL"           --audience "${SAFEDEPLOY_AUDIENCE:-}"           --auto-rollback "$SAFEDEPLOY_AUTO_ROLLBACK"
