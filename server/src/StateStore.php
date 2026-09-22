@@ -55,7 +55,7 @@ final class StateStore
         $stmt = $this->pdo->prepare(
             'INSERT INTO safedeploy_jobs
              (idempotency_key,target_rel,source_commit,manifest_sha256,payload_json,status,created_at)
-             VALUES (?,?,?,?,?,"PENDING",?)'
+             VALUES (?,?,?,?,?,'PENDING',?)'
         );
         try {
             $stmt->execute([
@@ -99,7 +99,7 @@ final class StateStore
     public function markJobDone(int $id): void
     {
         $stmt = $this->pdo->prepare(
-            'UPDATE safedeploy_jobs SET status="DONE", payload_json=NULL, finished_at=? WHERE id=? AND status="PENDING"'
+            'UPDATE safedeploy_jobs SET status='DONE', payload_json=NULL, finished_at=? WHERE id=? AND status='PENDING''
         );
         $stmt->execute([gmdate('Y-m-d H:i:s'), $id]);
         if ($stmt->rowCount() !== 1) {
@@ -126,7 +126,7 @@ final class StateStore
         $stmt = $this->pdo->prepare(
             'INSERT INTO safedeploy_deployments
              (job_id,target_rel,source_commit,manifest_sha256,status,backup_path,actor,created_at,promoted_at)
-             VALUES (?,?,?,?,"ACTIVE",?,?,?,?)'
+             VALUES (?,?,?,?,'ACTIVE',?,?,?,?)'
         );
         $now = gmdate('Y-m-d H:i:s');
         $stmt->execute([$jobId, $target, $commit, $manifest, $backupPath, $actor, $now, $now]);
