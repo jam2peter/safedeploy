@@ -1,0 +1,35 @@
+version = 1
+profile = "safedeploy-mixed"
+
+[report]
+path = ".quality-gate/report.json"
+
+[[gate]]
+id = "python-compile"
+phase = "type"
+command = "python3 -m compileall -q client tests"
+required = true
+
+[[gate]]
+id = "python-tests"
+phase = "test"
+command = "python3 -m unittest discover -s tests -p 'test_*.py' -v"
+required = true
+
+[[gate]]
+id = "php-lint"
+phase = "lint"
+command = "find server tests -name '*.php' -print0 | xargs -0 -n1 php -l"
+required = true
+
+[[gate]]
+id = "oidc-synthetic"
+phase = "test"
+command = "php tests/test_oidc.php"
+required = true
+
+[[gate]]
+id = "deploy-executor-synthetic"
+phase = "test"
+command = "php tests/test_executor.php"
+required = true
